@@ -23,6 +23,7 @@ serials_column = 'D'
 mac_column = 'E'
 # ################################################# PARAMETERS ABOVE ###################################################
 net_dictionary = {}
+shard_url = ()
 headers = {
     'X-Cisco-Meraki-API-Key': meraki_api,
     'Content-Type': 'application/json'
@@ -32,9 +33,9 @@ wb = load_workbook(spread)
 
 
 def pull_organization_id(head):
+    global shard_url
     url = "https://api.meraki.com/api/v0/organizations"
     payload = {}
-
     response = requests.request("GET", url, headers=head, data=payload)
     response = response.content
     response = json.loads(response)
@@ -42,8 +43,12 @@ def pull_organization_id(head):
         name = dicti["name"]
         if name == organization_id:
             org_id = dicti["id"]
+            shard_url = dicti["url"]
+            urlLenght = shard_url.find('com') + 3
+            shard_url = shard_url[:urlLenght]
             print("#################################################")
             print(name + "\n" + "Organization ID: " + org_id)
+            print("Organization Shard URL: " + shard_url)
             print("#################################################")
             return org_id
         else:
@@ -55,7 +60,7 @@ def pull_organization_networks(head):
     global organization_id
 
     organization_id = pull_organization_id(head)
-    url = "https://api.meraki.com/api/v0/organizations/" + organization_id + "/networks"
+    url = shard_url + "/api/v0/organizations/" + organization_id + "/networks"
     payload = {}
     response = requests.request("GET", url, headers=head, data=payload)
     response = response.content
@@ -113,7 +118,7 @@ def meraki_ap_parse_mac(workbook, networks, tbs, abr, name, serial, mac, head):
                 row_index.append(row)
                 serials = sheet[serial + str(n_ap_index)].value
 
-                url = "https://api.meraki.com/api/v0/networks/" + networks[incr] + "/devices/" + serials
+                url = shard_url + "/api/v0/networks/" + networks[incr] + "/devices/" + serials
 
                 payload = {
                     "serial": serials,
